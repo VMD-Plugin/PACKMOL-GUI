@@ -1,0 +1,9 @@
+REMARK 990  VOLUME: 29.9
+REMARK 990  LABEL: NULL
+REMARK 990  CHARGE: NULL
+REMARK 990  APL: NULL
+CRYST1   18.621   18.621   18.621  90.00  90.00  90.00 P 1           1
+ATOM      1  OW  SOL X   1       2.300   6.280   1.130  0.00  0.00            
+ATOM      2  HW1 SOL X   1       1.370   6.260   1.500  0.00  0.00            
+ATOM      3  HW2 SOL X   1       2.310   5.890   0.210  0.00  0.00            
+END

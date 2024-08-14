@@ -1,0 +1,61 @@
+tolerance 2.00
+filetype pdb
+pbc -28.20 -23.95 -70 28.20 23.95 70
+output example-2.pdb
+structure SCU-103-NO3.pdb
+	number 1
+	inside box -28.20 -23.95 -4.10 28.20 23.95 4.10
+end structure
+structure hydroxide.pdb
+	number 12
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure sulfate.pdb
+	number 12
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure nitrate.pdb
+	number 12
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure pertechnetate.pdb
+	number 12
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure hydroxide.pdb
+	number 12
+	inside box -28.20 -23.95 -70.00 28.20 23.95 -16.10
+end structure
+structure sulfate.pdb
+	number 12
+	inside box -28.20 -23.95 -70.00 28.20 23.95 -16.10
+end structure
+structure nitrate.pdb
+	number 12
+	inside box -28.20 -23.95 -70.00 28.20 23.95 -16.10
+end structure
+structure pertechnetate.pdb
+	number 12
+	inside box -28.20 -23.95 -70.00 28.20 23.95 -16.10
+end structure
+structure NH4.pdb
+	number 12
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure NA.pdb
+	number 48
+	inside box -28.20 -23.95 16.10 28.20 23.95 70.00
+end structure
+structure NA.pdb
+	number 48
+	inside box -28.20 -23.95 -70.00 28.20 23.95 -16.10
+end structure
+structure NH4.pdb
+	number 12
+	inside box -28.20 -23.96 -70.00 28.20 23.95 -16.10
+end structure
+structure tip3p.pdb
+	number 11118
+	inside box -28.20 -23.95 -70.00 28.20 23.95 70.00
+end structure
+add_box_sides 3
