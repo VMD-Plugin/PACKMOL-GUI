@@ -1,7 +1,7 @@
 INSTALLATION
 ============
 # **1. Download and Extract Files**<br>
-Download and extract the required files. Note: The files in the CoRE-MOFs-PDB directory have been expanded with Periodic Boundary Conditions (PBC), resulting in a total size of 3.6 GB. If you do not require this dataset (dataset/CoRE-MOF-PDB.tar.xz.part*), you can either delete or skip extracting it. To extract this file, use the following commands:<br>
+Download and extract the required files. Note: The files in the CoRE-MOFs-PDB directory have been expanded with Periodic Boundary Conditions (PBC), resulting in a total size of 3.6 GB. If you do not require this dataset (datasets/CoRE-MOF-PDB.tar.xz.part*), you can either delete or skip extracting it. To extract this file, use the following commands:<br>
 cat CoRE-MOFs-PDB.tar.xz.part* > temp.xz<br>
 tar -xvf temp.xz<br>
 # **2. Set Up Environment**<br>
