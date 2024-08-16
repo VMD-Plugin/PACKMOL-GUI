@@ -1,3 +1,5 @@
+Step-by-Step Guide
+===========
 ##  1. Import Molecules<br>
 Import water.pdb and palmitoil.pdb twice, resulting in a total of 4 molecules: water-0, palmitoil-1, palmitoil-2, and water-3.
 ##  2. Add Spherical Constraint to Water-0
