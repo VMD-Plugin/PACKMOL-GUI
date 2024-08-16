@@ -33,7 +33,7 @@ end structure
 # of radius 26.)
 # original number is 90 
 structure palmitoil.pdb 
-  number 220
+  number 229
   atoms 37
     inside sphere 0. 0. 0. 14. 
   end atoms
@@ -48,7 +48,7 @@ end structure
 # the smaller layer. The polar head will be pointing outward the sphere.
 #original number is 300
 structure palmitoil.pdb 
-  number 680
+  number 689
   atoms 5
     inside sphere 0. 0. 0. 29. 
   end atoms

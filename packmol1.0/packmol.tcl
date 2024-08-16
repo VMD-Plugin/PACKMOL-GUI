@@ -123,6 +123,8 @@ namespace eval ::packmol:: {
 
 	set draw_shape "yes"
 	set draw_label "yes"
+	variable label_size
+	set label_size 1.0
 
 	variable box_start_x
         variable box_start_y
@@ -335,7 +337,7 @@ namespace eval ::packmol:: {
 	variable chkgrad
 	set chkgrad "no"
 	variable checkbox
-	set checkbox "no"
+	set checkbox "yes"
 	variable use_short_tol
 	set use_short_tol "no"
 	variable short_tol_dist
@@ -387,7 +389,574 @@ namespace eval ::packmol:: {
 	set cylinder_value 0.00
 
 	variable packmol_userguide
-	set packmol_userguide "this is guide"
+	set packmol_userguide {User guide
+Important: always download the latest version of Packmol in order that all features are available.
+
+Contents
+1. What do you need?
+2. How to compile Packmol.
+3. Running Packmol.
+4. Basic input structure.
+5. More types of molecules.
+6. Atom selections.
+7. Types of constraints.
+8. Periodic boundary conditions.
+9. Different radii for different atoms.
+10. Solvating a large molecule automatically.
+11. Controlling residue numbering in PDB files.
+12. Building very large systems: using restart files.
+13. Convergence problems: what to try.
+14. Additional input options and keywords.
+15. Some tutorials available online.
+
+What do you need?
+
+You need coordinate files for each type of molecule you want your simulation to have. For example, if you are going to simulate a solution of water and ions, you will need a coordinate file for one water molecule, and independent coordinates files for each of the ions. This coordinate files may be in the PDB, TINKER, MOLDEN or MOLDY format. The simplest and best molecular structure builder we have used is this one.
+
+Of course, you also need the Packmol package, which you can get from
+  http://m3g.iqm.unicamp.br/packmol
+by clicking on the Download link. You can download the file packmol-20.14.4.tar.gz which contains the whole source code of Packmol. The 20.14.4 is the version number, which might change relative to this example.
+
+Windows users: We suggest trying to use the Julia-based distribution available at [Packmol.jl], which works on all platforms and doesn't need compilation.
+
+If you plan to use MOLDY as your MD package, read THIS.
+
+How to compile Packmol
+
+Once you have downloaded the packmol-20.14.4.tar.gz file from the home-page, you need to expand the files and compile the package. This is done by:
+
+Expanding the files:
+  tar -xvzf packmol-20.14.4.tar.gz
+This will create a directory called packmol inside which you can find the source code. You can build the executable by:
+  cd packmol
+  make
+That's it, if no error was reported the packmol executable was built. Note that 20.14.4 is the version number, which may differ relative to this example.
+
+-----
+
+If you have problems, let the configure script find a suitable compiler for you:
+
+chmod +x ./configure (this makes the script executable)
+
+./configure (this executes the script)
+
+If the script was not able to find a suitable compiler, then you can manually set the compiler by:
+
+./configure /path/to/your/compiler/yourcompiler
+
+Then, run the "make" command again:
+
+make
+
+If no error was detected, an executable called packmol is now ready.
+
+Running Packmol
+
+Once you have compiled and built your input file, run Packmol with
+
+packmol < packmol.inp
+
+Where packmol.inp is the input file (you can obtain example files by clicking at the 'Input examples' link on the left).
+
+A successful packing will end with something like
+
+------------------------------
+Success!
+Final objective function value: .22503E-01
+Maximum violation of target distance: 0.000000
+Maximum violation of the constraints: .78985E-02
+
+------------------------------
+
+
+Where the maximum violation of the target distance indicates the difference between the minimum distance between atoms required by the user and that of the solution. It will not be greater than 10^-2 The maximum violation of the constrains must not be greater than 10^-2.
+
+A good idea is to check if your constraints are correct by using the "check" keyword in the input file. With this option a rough initial approximation will be built but no actual packing will be performed. You can look at the output to see if the molecules are within the desired regions (but do not expect a good structure at this point!). Just add the word "check" to any line of your input file (available since 28 Feb 2008).
+
+
+Common issues:
+
+- If you get "Command not found" when running Packmol, use
+./packmol < packmol.inp
+(with a "./" before "packmol") or add the directory where the packmol executable is located to your path.
+
+- If you run packmol and get the message "Killed", this is because the package is trying to allocate more memory than available for static storage. Open the "sizes.i" file and decrease the "maxatom" parameter to the number of atoms of your system, compile the package again, and try again.
+
+Basic input structure
+
+The minimal input file must contain the distance tolerance required (for systems at room temperature and pressure and coordinates in Angstroms, 2.0 Å is a good value [note]). This is specified with
+
+tolerance 2.0
+
+The file must contain also the name of the output file to be created, specified with
+
+output test.pdb
+
+and the file type (pdb, tinker, xyz or moldy, pdb is the default value),
+
+filetype pdb
+
+At least one type of molecule must be present. This is set by the structure ... end structure section, for example, if water.pdb is the file containing the coordinates of a single water molecule, you could add to your input file something like
+
+structure water.pdb
+  number 2000
+  inside cube 0. 0. 0. 40.
+end structure
+
+This section specifies that 2000 molecules of the water.pdb type, will be placed inside a cube with minimum coordinates (x,y,z)=(0,0,0) and maximum coordinates (40,40,40). Therefore, this minimum input file must be:
+
+tolerance 2.0
+output test.pdb
+filetype pdb
+structure water.pdb
+  number 2000
+  inside cube 0. 0. 0. 40.
+end structure
+
+Running Packmol with this input file will fill a cube of side 40.0 Å with 2000 water molecules. Every pair of atoms of different molecules will be separated by, at least, 2.0 Å and the molecules will be randomly distributed inside de cube.
+
+More types of molecules
+
+You can add more types of molecules to the same region, or to different regions of the space, simply adding other structure ... end structure section to the input file.
+
+Atom selections
+
+The coordinate file of a single molecule contains, for example, 10 atoms. You can restrain a part of the molecule to be in a specified region of the space. This is useful for building vesicles where the hydrophilic part of the surfactants must be pointing to the aqueous environment, for example. For the 10 atoms molecule, this is done by using the keyword atoms, as in
+
+structure molecule.pdb
+  inside cube 0. 0. 0. 20.
+  atoms 9 10
+    inside box 0. 0. 15. 20. 20. 20.
+  end atoms
+end structure
+
+In this case, all the atoms of the molecule will be put inside the defined cube, but atoms 9 and 10 will be restrained to be inside the box.
+
+Types of constraints
+
+There are several types of constraints that can be applied both to whole molecules or to parts of the molecule. These constraints define the region of the space in which the molecules must be at the solution. Very ordered systems can be built in such a way. The constraints are:
+
+1.	fixed
+Usage: fixed x y z a b g
+
+This options holds the molecule fixed in the position specified by the parameters. x, y, z, a, b, g, which are six real numbers. The first three determine the translation of the molecule relative to its position in the coordinate file. The latter three parameters are rotation angles (in radians). For this option it is required that only one molecule is set. It may be accompanied by the keyword center. If this keyword is present the first three numbers are the position of the baricenter (not really the center of mass, because we suppose that all atoms have the same mass). Therefore this keyword must be used in the following context:
+
+structure molecule.pdb
+  number 1
+  center
+  fixed 0. 0. 0. 0. 0. 0.
+end structure
+
+In this example, the molecule will be fixed with its center the origin and no rotation.
+
+2.	inside cube
+Usage: inside cube xmin  ymin  zmin  d
+
+xmin , ymin , zmin and d are four real numbers. The coordinates (x,y,z) of the atoms restrained by this option will satisfy, at the solution:
+
+
+xmin < x < xmin + d
+ymin < y < ymin + d
+zmin < z < zmin + d
+
+
+3.	outside cube
+Usage: outside cube xmin  ymin  zmin  d
+
+xmin , ymin , zmin and d are four real numbers. The coordinates (x,y,z) of the atoms restrained by this option will satisfy, at the solution:
+
+
+x < xmin or x > xmin + d
+y < ymin or y > ymin + d
+z < zmin or z > zmin + d
+
+
+4.	inside box
+Usage: inside box  xmin  ymin  zmin  xmax  ymax  zmax
+
+xmin , ymin , zmin , xmax , ymax  and zmax are six real numbers. The coordinates (x,y,z) of the atoms restrained by this option will satisfy, at the solution:
+
+xmin < x < xmax
+ymin < y < ymax
+zmin < z < zmax
+
+
+5.	outside box
+Usage: outside box  xmin  ymin  zmin  xmax  ymax  zmax
+
+xmin , ymin , zmin , xmax , ymax  and zmax are six real numbers. The coordinates (x,y,z) of the atoms restrained by this option will satisfy, at the solution:
+
+x < xmin or x > xmax
+y < ymin or y > ymax
+z < zmin or z > zmax
+
+
+6.	inside (or outside) sphere
+Spheres are defined by equations of the general form
+
+(x-a)^2+(y-b)^2+(z-c)^2-d^2=0
+
+and, therefore, you must provide four real parameters a, b, c and d in order to define it. The input syntax is, for example,
+
+inside sphere 2.30 3.40 4.50 8.0
+
+and therefore the coordinates of the atoms will satisfy the equation
+
+(x-2.30)^2+(y-3.40)^2+(z-4.50)^2-8.0^2<=0.0
+Other input alternative would be:
+
+outside sphere 2.30 3.40 4.50 8.0
+
+The outside parameter is similar to the inside parameter, but the equation above uses >= instead of <= and, therefore, the atoms will be placed outside the defined sphere.
+
+7.	inside (or outside) ellipsoid
+Ellipsoids are defined by the general equation
+
+(x-a1)^2/a2^2+(y-b1)^2/b2^2+(z-c1)^2/c2^2-d^2=0
+The parameters must be given as in the sphere example, but now they are 7, and must be entered in the following order:
+
+inside ellipsoid   a1  b1  c1  a2  b2  c2  d
+
+The coordinates (a1,b1,c1) will define the center of the ellipsoid, the coordinates (a2,b2,c2) will define the relative size of the axes and d will define the volume of the ellipsoid. Of course, the commands
+
+outside ellipsoid   a1  b1  c1  a2  b2  c2  d
+
+can also be used in the same manner as the parameters for spheres. Note that the case a2 = b2 = c2 = 1.0 provides the exactly the same as the sphere parameter. The parameters for the ellipsoid are not normalized. Therefore, if a2, b2 and c2 are large, the ellipsoid will be large, even for a small d.
+
+8.	above (or below) plane
+The planes are defined by the general equation
+
+ax+by+cz-d=0
+And it is possible to restrict atoms to be above or below the plane. The syntax is
+
+above plane 2.5 3.2 1.2 6.2
+
+below plane 2.5 3.2 1.2 6.2
+
+where the above keyword will make the atoms satisfy the condition
+2.5x+3.2y+1.2z-6.2>=0
+and the below keyword will make the atoms satisfy
+2.5x+3.2y+1.2z-6.2<=0
+*Note: the above notation was introduced in version 20.1.1 (Sept. 5, 2020)
+
+9.	inside (or outside) cylinder
+In order to define a cylinder, it is necessary first to define a line oriented in space. This line is defined in Packmol by the parametric equation
+p=(a1,b1,c1)+t*(a2,b2,c2)
+where t is the independent parameter. The vector (a2,b2,c2) defines the direction of the line. The cylinder is therefore defined by the distance to this line, d, and a length l. Therefore, the usage must be:
+
+inside cylinder  a1  b1  c1  a2  b2  c2  d  l
+
+outside cylinder  a1  b1  c1  a2  b2  c2  d  l
+
+Here, the first three parameters define the point where the cylinder starts, and l defines the length of the cylinder. d defines de radius of the cylinder. The simpler example is a cylinder oriented in the x axis and starting at the origin, such as
+
+inside cylinder 0. 0. 0. 1. 0. 0. 10. 20.
+
+This cylinder is specified by the points that have a distance of 10. to the x axis (the cylinder has a radius of 10.). Furthermore, it starts at the origin, therefore no atom restricted by this cylinder will have an x coordinate less than 0. Furthermore, it has a length of 20. and, as such, no atom will have an x coordinate greater than 20. The orientation of the cylinder, parallel to the x axis is defined by the director vector (1,0,0), the fourth, fifth and sixth parameters. Cylinders can be oriented in space in anyway.
+
+10.	Constrain rotations
+It is possible to constrain rotations of all molecules of each type, so that they have some average orientation in space.
+
+The keywords to be used are, within a structure...end structure section:
+
+constrain_rotation x 180. 20.
+constrain_rotation y 180. 20.
+constrain_rotation z 180. 20.
+
+Each of these keywords restricts the possible rotation angles around each axis to be within 180±20 degrees (or any other value). For a technical reason the rotation around the z axis will, alone, be identical to the rotation around the y axis (we hope to fix this some day). Constraining the three rotations will constrain completely the rotations. Note that to have your molecules oriented parallel to an axis, you need to constrain the rotations relative to the other two.
+
+For example, to constrain the rotation of your molecule along the z axis, use something like:
+
+constrain_rotation x 0. 20.
+constrain_rotation y 0. 20.
+
+Note that these rotations are defined relative to the molecule in the orientation which was provided by the user, in the input PDB file. Therefore, it is a good idea to orient the molecule in a reasonable way in order to understand the rotations. For example, if the molecule is elongated in one direction, a good idea is to provide the molecule with the larger dimension oriented along the z axis.
+
+
+
+11.	over (or below) xygauss (gaussian surface)
+Gaussian surfaces are defined by the equation
+h*exp[-(x-a1)^2/2a2^2-(y-b1)^2/2b2^2]-(z-c)=0
+Parameters (a1,b1) define center of the gaussian, while c specifies the height in the z dimension. a2 and b2 set the width of the gaussian in x and y, respectively, while h specifies its height. It is possible to restrict atoms to be over or below the gaussian plane. The gaussian surface as implemented is restricted to be over the xy plane. The syntax is
+
+
+
+over xygauss a1 b1 a2 b2 c h
+
+below xygauss a1 b1 a2 b2 c h
+
+For example, using
+
+over xygauss 21.0 5.0 10.0 20.0 -23.0 15.0
+
+the atoms satisfy the condition
+15.0*exp[-(x-21.0)^2/2(10.0)^2-(y-5.0)^2/2(20.0)^2]-(z+23.0)>=0.0
+
+
+Periodic Boundary Conditions
+
+As of version 20.15.0, Packmol supports Orthorhombic periodic boundary conditions (thanks to Yi Yao for the contribution).
+
+Usage:
+
+For example, to set a periodic boundary with a box of 30x30x60 Angstroms, use:
+
+pbc 30.0 30.0 60.0
+
+In this case, all molecules will be set to stay in the box defined by minimum and maximum coordinates 0.0 0.0 0.0 30.0 30.0 60.0, but with periodic boundary conditions at the boundaries.
+
+And if six parameters are provided, the periodic boundaries will be applied at the minimum and maximum coordinates provided:
+
+pbc -15.0 -15.0 -30.0 15.0 15.0 60.0
+
+This keyword is a global keyword, and will affect all but fixed molecules. For example, this creates a periodic box of water:
+
+tolerance 2.0
+output water_box.pdb
+pbc 30.0 30.0 60.0
+structure water.pdb
+  number 1000
+end
+
+
+And this will create an interface of water and carbon tetrachloride, with the interface at the (z=0) plane:
+
+tolerance 2.0
+output interface.pdb
+pbc -20.0 -20.0 -30.0 20.0 20.0 30.0
+structure water.pdb
+  number 1000
+  below plane 0.0 0.0 1.0 0.0
+end structure
+structure ccl4.pdb
+  number 200
+  above plane 0.0 0.0 1.0 0.0
+end structure
+
+
+Importantly, the positions of the constraints refer to the periodic reference box, which is defined by the minimum and maximum coordinates provided.
+
+Different radii for different atoms
+
+It is possible (from version 15.133 on) to attribute different radii to different atoms during the packing procedure. The default behavior is that all atoms will be distant to each other at the final structure at least the distance defined by the tolerance parameter. In this case it is possible to think that the radius of every atom is half the distance tolerance. A tolerance of 2.0 Angs is usually fine for simulation of molecular systems using all-atom models.
+
+Most times, therefore, you won't need this option. This was requested by users that want to pack multiscale models, in which all-atom and coarse-grained representations are combined in the same system.
+
+It is easy to define different radii to different molecules, or to atoms within a molecule. Just add the "radius" keyword within the structure ... end structure section of a molecule type, or within atoms ... end atoms section of an atom selection.
+
+For example, in this case:
+
+tolerance 2.0
+structure water.pdb
+  number 500
+  inside box 0. 0. 0. 30. 30. 30.
+  radius 1.5
+end structure
+
+the radius of the atoms of the water molecules will be 1.5. Note that this implies a distance tolerance of 3.0 within water molecules.
+
+In this case, on the other side:
+
+tolerance 2.0
+structure water.pdb
+  number 500
+  inside box 0. 0. 0. 30. 30. 30.
+  atoms 1 2
+    radius 1.5
+  end atoms
+end structure
+
+only atoms 1 and 2 of the water molecule (as listed in the water.pdb file) will have a radius of 1.5, while atom 3 will have a radius of 1.0, as defined by the tolerance of 2.0
+
+Always remember that the distance tolerance is the sum of the radii of each pair of atoms, and that the greatest the radii the harder the packing. Also, keep in mind that your minimization and equilibration will take care of the actual atom radii, and Packmol is designed only to give a first coordinate file.
+
+Finally, currently the restrictions are set to be fulfilled by the center of the atoms. Therefore, if you are using large radii, you might want to adjust the sizes of the boxes, spheres, etc., so that the whole atoms are within the desired regions. For standard all-atom simulations this is not usually an issue because the radii are small.
+
+Solvating large molecules automatically
+
+The Packmol distribution includes the solvate.tcl script, which is used to solvate large molecules, usually proteins, with water and ions (Na+ and Cl-). Given the PDB file of the biomolecule, just run the script with:
+
+solvate.tcl PROTEIN.pdb
+
+And the script will create a input file for packmol called packmol_input.inp. With this file, run Packmol with
+
+packmol < packmol_input.inp
+
+And your large molecule will be solvated by a shell of 15. Angs. of water, and ions to keep the system neutral and a physiological NaCl concentration of 0.16M. The script usually makes reasonable choices for every parameter (number of water molecules, number of ions, etc.), but these may be controlled manually with additional options, as described below:
+
+solvate.tcl structure.pdb -shell 15. -charge +5 -density 1.0 -i pack.inp -o solvated.pdb
+
+Where:	structure.pdb is the pdb file to be solvated (usually a protein)
+
+"15." is the size of the solvation shell. This is an optional parameter. If not set, 15. will be used.
+
++5 is the total charge of the system, to be neutralized. This is also and optional parameter, if not used, the package considers histidine residues as neutral, Arg and Lys as +1 and Glu and Asp as -1. The Na+ and Cl- concentrations are set the closest possible to 0.16M, approximately the physiological concentration. Alternatively, use the -noions to not add any ions, just water.
+
+1.0 is the desired density. Optional. If not set, the density will be set to 1.0 g/ml.
+
+solvated.pdb: is the (optional) name for the solvated system output file. If this argument is not provided, it will be the default solvated.pdb file.
+
+pack.inp: is the (optional) name for the packmol input file that will be generated. If not provided, packmol_input.inp will be used.
+
+All these options are output when running the "solvate.tcl" script without any parameter. The script also outputs the size of the box and the suggested periodic boundary condition dimensions to be used.
+
+Controlling residue numbering in PDB files.
+
+Since Packmol will create one or more copies of your molecules in a new PDB file, there are some options on how residue numbers are set to these new molecules. There are four options, which are set with the resnumbers keyword. This keyword may assume three values, 0, 1, 2 or 3, and must be inserted within the structure ... end structure section of each type of molecule. The options are:
+
+resnumbers 0
+
+In this case the residue numbers of all residues will correspond to the molecule of each type, independently of the residue numbering of the original pdb file. This means that if you pack 10 water molecules and 10 ethanol molecules, the water molecules will be numbered 1 to 10, and the ethanol molecules will be numbered 1 to 10.
+
+resnumbers 1
+
+In this case, the residue numbers of the original pdb files are kept unmodified. This means that if you pack 10 proteins of 5 residues, the residue numbers will be preserved and, therefore, they will be repeated for equivalent residues in each molecule of the same protein.
+
+resnumbers 2
+
+In this case, the residue numbers of all residues for this structure will be numbered sequentially according to the number of residues that are printed previously in the same file. This means that if you pack 10 proteins of 5 residues, there will be residue numbers ranging from 1 to 50.
+
+resnumbers 3
+
+In this case, the numbering of the residues will correspond to the sequential numbering of all residues in the file. That is, if you pack a protein with 150 residues followed by 10 water molecules, and use this option for the water molecules, the water molecules will be numbered from 151 to 161. Note: If you use this option for a protein, the whole protein will have its residue numbers overwritten by the same number, corresponding to the residue that would follow in the complete structure.
+
+For example, this keyword may be used as in:
+structure peptide.pdb  
+  number 10               
+  resnumbers 1            
+  inside box 0. 0. 0. 20. 20. 20.
+end structure        
+Default: The default behavior is to use 0 for structures with only one residue and 1 for structures with more than one residue.
+
+Chain identifier:
+It is also possible to modify the "chain" identifiers of PDB files. By default, each type of molecule is set to a "chain". On the other side, using the
+
+changechains
+
+whithin the structure...end structure section of a type of molecule, the chains will alternate between two values ("A" and "B" for example). This might be useful if the molecules are peptides, and topology builders sometimes think that the peptides of the same chain must be joint by covalent bonds. This is avoided by alternating the chain from molecule to molecule.
+
+Additionally each structure can have a specific chain identifier, set by the user with the option:
+
+chain D
+
+where "D" is the desired identifier (Do not use "#").
+
+Building very large systems: using restart files
+
+From version 16.143 on, it is possible to build the system from multiple and independent executions of Packmol by the use of restart files. In order to write a restart file, the following keyword must be used: restart_to restart.pack where restart.pack is the name of the restart file to be created. It is possible to write restart files for the whole system, if the keyword is put outside structure...end structure sections, or to write a restart file for a specific part of the system, using, for instance:
+structure water.pdb
+  number 1000
+  inside cube 0. 0. 0. 40.
+  restart_to water1.pack
+end structure
+This will generate a restart file for the water molecules only.
+
+These restart files can be used to start a new execution of Packmol with more molecules. The restart_from keyword must then be used. For example:
+structure water.pdb
+  number 1000
+  inside cube 0. 0. 0. 40.
+  restart_from water1.pack
+end structure
+The new input file might contain other molecules, as a regular Packmol input file, and these water molecules will be packed together with the new molecules, but starting from the previous runs. This can be used, for example, to build solvated bilayers by parts. For instance, the bilayers could be built and, later, different solvents can be added to the bilayer, without having to restart the whole system construction from scratch every time. This could also be used to add some molecule to the bilayer.
+
+Tip: the restart file can be used to restart the position of a smaller number of molecules of the same type. For instance, if a new molecule is introduced inside a previous set of molecules (a lipid bilayer, for instance), you can tell Packmol to pack less molecules of the original set, in order to provide space for the new structure, while using the original restart file of more molecules. That is, a restart_from water1.pack similar to the ones of the example above could be used to restart the positions of 800 molecules.
+
+Convergence problems: what to try
+
+Sometimes Packmol is not able to find an adequate packing solution. Here are some tips to try to overcome these difficulties:
+
+* Look at the best solution obtained, many times it is good enough to be used.
+* Simulate the same problem with only a few molecules of each type. For example, instead of using 20 thousand water molecules, put 300, and see if they are in the correct regions.
+* If you have large molecules, try running the program twice, one to pack these molecules, and then use the solution as fixed molecule for the next packing, in which solvation is included. This may be particularly useful for building solvated membranes. Build the membrane first and then use it as a fixed molecule for a solvation run.
+* You can change some options of the packing procedure to try improve the optimization:
+1.	discale [real]
+This option controls the distance tolerance actually used in the local optimization method. It was found that using larger distances helps sometimes. Try setting discale to 1.5, for example.
+2.	maxit [integer]
+This is the maximum number of iterations of the local optimizer (GENCAN) per loop. The default value is currently 20, changing it may improve (or worse) the convergence.
+3.	movebadrandom
+One of the convergence heuristics of Packmol consists in moving molecules that are badly placed. If this option is set, the molecules will be placed in new random position in the box. If not (default), the molecules are moved to positions nearby molecules that are well packed. Using this option can help when the restraints are complex, but will probably be bad if there are large structures, because the new random position might overlap with those.
+4.	movefrac and maxmove
+In the heuristic that moves the worst molecules, movefrac defines which is the fraction of molecules that are going to be moved, for each type of molecule. For very large systems, it is isually a good idea to define a small value of movefrac, because otherwise the randomization of the system is too great. The default value is 0.05. At the same time, maxmove defines a maximum absolute number of molecules to be displaced for each type of molecule. it must be set within a structure ... end structure section, and defaults to the number of molecules of each type.
+
+
+Additional input options and keywords
+
+There are some input options which are probably not of interest of the general user, but may be useful in specific contexts. These keywords may be added in the input file in any position.
+
+Write a CHARMM CRD file as output:
+Usage: writecrd output.crd
+The segment identifier for each type of molecule can be set by adding, within the structure ... end structure section of each type, the following keyword:
+segid NAME.
+
+Add the TER flag betwen every molecule (AMBER uses this):
+Usage: add_amber_ter
+and
+Usage: amber_ter_preserve
+(this option will preserve TER flags within input structures, fixed or not from v20.14.0 on).
+
+Add box side information to output PDB File (GROMACS uses this):
+Usage: add_box_sides 1.0
+Where the "1.0" is an optional real number that will be added to the length of each side, if the actual sides of your simulation box will not be exactly the same as the maximum and minimum coordinates of the molecules of the system (usually, if you are using periodic boundary conditions, you may want to add "1.0" to avoid clashes at the boundary).
+
+Display, or not, connectivity of molecules in output PDB files:
+Usage: connect yes/no
+By default, if the input PDB file of a molecule has CONECT fields, the output PDB File of packmol will contain also CONECT fields with the appropriate connectivity of the corresponding molecules. If you do not want this, add connect no to the structure section of this molecule, and the output of the connectivity will be suppressed.
+
+Increase maximum system dimensions:
+Usage: sidemax [real] (ex: sidemax 2000.d0)
+"sidemax" is used to build an initial approximation of the molecular distribution. Increase "sidemax" if your system is very large, or your system may look cut out by this maximum dimension. All system coordinates must fit within -sidemax and +sidemax, and using a sidemax that approximately fits your system may accelerate a little bit the packing calculation. The default value is 1000.d0.
+
+Change random number generator seed:
+Usage: seed [integer] (ex: seed 191917)
+Use seed -1 to generate a seed automatically from the computer time.
+
+Use a truly random initial point for the minimization (the default option is to generate a roughly homogeneous-density initial approximation):
+Usage: randominitialpoint
+
+Avoid, or not, overlap with fixed molecules at initial point (avoiding this overlaps is generally recommended, but sometimes generates gaps that are too large):
+Usage: avoid_overlap yes/no
+
+Change the maximum number of Gencan iterations per loop:
+Usage: maxit [integer]
+
+Change the maximum number of optimization loops (if this option is used inside the structure section, it affects the number of optimization loops only of that specific structure):
+Usage: nloop [integer]
+
+Change the precision required for the solution: how close the solution must be to the desired distances to be considered correct.
+Usage: precision [real] (Default: 0.01)
+
+Change the frequency of output file writing:
+Usage: writeout [integer]
+
+Write the current point to output file even if it is worse than the the best point so far (used for checking purposes only):
+Usage: writebad
+
+Change the optimization subroutine printing output:
+Usage: iprint1 [integer] and/or iprint2 [integer]
+where the integer must be 0, 1, 2 or 3.
+
+Change the number of bins of the linked-cell method (technical):
+Usage: fbins [real]
+The default value is the square root of three.
+
+Compare analytical and finite-difference gradients: This is only for testing purposes. Writes chkgrad.log file containing the comparison.
+Usage: chkgrad
+
+Options tho change the shape of the minimum-distance penalty function:
+
+Usage: fscale [real]
+This option must be used within structure ... end structure or atoms ... end atoms sections, to change the weight of the penalty function, as illustrated in the images below. The fscale defines how greater the penalty is relative to the default penalty.
+
+Usage: use_short_tol
+Usage: short_tol_dist [real]
+Usage: short_tol_scale [real]
+These options define a new penalty tolerance for short distances, to increase the repulsion between atoms when they are too close to each other. The "use" parameter turns on this feature, using default parameters (dist=tolerance/2; scale=3). The "dist" parameter defines from which distance the penalty is applied, and the "scale" parameter how greater this penalty is relative to the default penalty. They affect the penalty of all atoms. Remember that the "tolerance" is twice the size of the "radius" of each atom. The figure below, on the right, illustrates for example the build up of the penalty function using short_tol_dist=0.5; short_tol_scale=3, with the default overall tolerance of 2.0 set.
+
+Usage: short_radius [real]
+Usage: short_radius_scale [real]
+These parameters define a new penalty for short distances, but for specific atoms. These options must be used within structure ... end structure or atoms ... end atoms sections. Note that, in this case, the radius is defined (the actual tolerance is the sum of the radii of each pair of atoms; for atoms without an explicit radius definition, the radius is one half of the overall set tolerance parameter).}
+
+	set packmol_userguide [encoding convertfrom utf-8 $packmol_userguide]
 
 	variable cube_xyarea
 	set cube_xyarea 0.00
@@ -403,6 +972,9 @@ namespace eval ::packmol:: {
 	set ellipsoid_area 0.00
 	variable cylinder_area
 	set cylinder_area 0.00
+
+	variable click_save
+	set click_save 0
 }
 
 proc ::packmol::packmolview {} {
@@ -417,7 +989,7 @@ proc ::packmol::packmolview {} {
 	catch {destroy $packmol}
 	toplevel $packmol
 	wm title .packmolview "packmol"
-	wm resizable $packmol 1 1
+	wm resizable $packmol 0 0
 	wm protocol $packmol WM_DELETE_WINDOW "menu packmolview off"
 
 	# system
@@ -819,7 +1391,7 @@ proc ::packmol::packmolview {} {
         grid $packmol.all.first.general.tol_constrain.out_bad_print.fra.chkgrad.label $packmol.all.first.general.tol_constrain.out_bad_print.fra.chkgrad.radiobutton
 
 	frame $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox
-	label $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox.label -text "loading output structure:"
+	label $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox.label -text "load output structure:"
 	frame $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox.radiobutton
 	radiobutton $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox.radiobutton.yes -text yes -variable ::packmol::checkbox -value "yes" -state normal -command {::packmol::change_general_setting}
 	radiobutton $packmol.all.first.general.tol_constrain.out_bad_print.fra.checkbox.radiobutton.no -text no -variable ::packmol::checkbox -value "no" -state normal -command {::packmol::change_general_setting}
@@ -1160,23 +1732,35 @@ proc ::packmol::packmolview {} {
 	labelframe $packmol.all.first.sel.up_down
 
 	labelframe $packmol.all.first.sel.up_down.shape_label
-	frame $packmol.all.first.sel.up_down.shape_label.shape
-	label $packmol.all.first.sel.up_down.shape_label.shape.label -text "show shape:"
-	frame $packmol.all.first.sel.up_down.shape_label.shape.radiobutton
-	radiobutton $packmol.all.first.sel.up_down.shape_label.shape.radiobutton.yes -text yes -variable ::packmol::draw_shape -value "yes" -state normal -command {::packmol::select_draw_shape}
-	radiobutton $packmol.all.first.sel.up_down.shape_label.shape.radiobutton.no -text no -variable ::packmol::draw_shape -value "no" -state normal -command {::packmol::select_draw_shape}
-	grid $packmol.all.first.sel.up_down.shape_label.shape.radiobutton.yes $packmol.all.first.sel.up_down.shape_label.shape.radiobutton.no
-	grid $packmol.all.first.sel.up_down.shape_label.shape.label $packmol.all.first.sel.up_down.shape_label.shape.radiobutton
+	labelframe $packmol.all.first.sel.up_down.shape_label.shape_frame
+	frame $packmol.all.first.sel.up_down.shape_label.shape_frame.shape
+	label $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.label -text "show shape:"
+	frame $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton
+	radiobutton $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton.yes -text yes -variable ::packmol::draw_shape -value "yes" -state normal -command {::packmol::select_draw_shape}
+	radiobutton $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton.no -text no -variable ::packmol::draw_shape -value "no" -state normal -command {::packmol::select_draw_shape}
+	grid $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton.yes $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton.no
+	grid $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.label $packmol.all.first.sel.up_down.shape_label.shape_frame.shape.radiobutton
+	pack $packmol.all.first.sel.up_down.shape_label.shape_frame.shape
 
-	frame $packmol.all.first.sel.up_down.shape_label.label
-	label $packmol.all.first.sel.up_down.shape_label.label.label -text "show label:"
-	frame $packmol.all.first.sel.up_down.shape_label.label.radiobutton
-	radiobutton $packmol.all.first.sel.up_down.shape_label.label.radiobutton.yes -text yes -variable ::packmol::draw_label -value "yes" -state normal -command {::packmol::select_draw_label}
-	radiobutton $packmol.all.first.sel.up_down.shape_label.label.radiobutton.no -text no -variable ::packmol::draw_label -value "no" -state normal -command {::packmol::select_draw_label}
-	grid $packmol.all.first.sel.up_down.shape_label.label.radiobutton.yes $packmol.all.first.sel.up_down.shape_label.label.radiobutton.no
-	grid $packmol.all.first.sel.up_down.shape_label.label.label $packmol.all.first.sel.up_down.shape_label.label.radiobutton
+	labelframe $packmol.all.first.sel.up_down.shape_label.label_frame
+	frame $packmol.all.first.sel.up_down.shape_label.label_frame.label
+	label $packmol.all.first.sel.up_down.shape_label.label_frame.label.label -text "show label:"
+	frame $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton
+	radiobutton $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton.yes -text yes -variable ::packmol::draw_label -value "yes" -state normal -command {::packmol::select_draw_label}
+	radiobutton $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton.no -text no -variable ::packmol::draw_label -value "no" -state normal -command {::packmol::select_draw_label}
+	grid $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton.yes $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton.no
+	grid $packmol.all.first.sel.up_down.shape_label.label_frame.label.label $packmol.all.first.sel.up_down.shape_label.label_frame.label.radiobutton
 
-	pack $packmol.all.first.sel.up_down.shape_label.shape $packmol.all.first.sel.up_down.shape_label.label -side left -fill both -expand 1
+	frame $packmol.all.first.sel.up_down.shape_label.label_frame.size
+	label $packmol.all.first.sel.up_down.shape_label.label_frame.size.text -text "size:"
+	spinbox $packmol.all.first.sel.up_down.shape_label.label_frame.size.spin -width 6 -relief sunken -bd 2 -textvariable ::packmol::label_size -from 0 -to 10 -increment 0.1 -command {::packmol::select_draw_label}
+	bind $packmol.all.first.sel.up_down.shape_label.label_frame.size.spin <Return> {
+		::packmol::select_draw_label
+	}
+	grid $packmol.all.first.sel.up_down.shape_label.label_frame.size.text $packmol.all.first.sel.up_down.shape_label.label_frame.size.spin
+	pack $packmol.all.first.sel.up_down.shape_label.label_frame.label $packmol.all.first.sel.up_down.shape_label.label_frame.size -side left -fill both -expand 1
+
+	pack $packmol.all.first.sel.up_down.shape_label.shape_frame $packmol.all.first.sel.up_down.shape_label.label_frame -side left -fill both -expand 1
 
 	labelframe $packmol.all.first.sel.up_down.graphics
 	ttk::notebook $packmol.all.first.sel.up_down.graphics.all_graphics
@@ -1924,9 +2508,9 @@ proc ::packmol::packmolview {} {
 	pack $packmol.all.first.system.system_fra.packmol_input_show.show.notebook -fill both
 
 	frame $packmol.all.first.system.system_fra.packmol_input_show.browse_save
-	frame $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load
-	button $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load.button -text "load" -width 8 -height 1 -command {::packmol::load_inp}
-	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load.button
+#	frame $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load
+#	button $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load.button -text "load" -width 8 -height 1 -command {::packmol::load_inp}
+#	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load.button
 
 	frame $packmol.all.first.system.system_fra.packmol_input_show.browse_save.save
 	button $packmol.all.first.system.system_fra.packmol_input_show.browse_save.save.button -text "save" -width 8 -height 1 -command {::packmol::generate_output}
@@ -1940,7 +2524,8 @@ proc ::packmol::packmolview {} {
 	button $packmol.all.first.system.system_fra.packmol_input_show.browse_save.run.button -text "run" -width 8 -height 1 -command {::packmol::generate_bash}
 	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.run.button
 
-	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load $packmol.all.first.system.system_fra.packmol_input_show.browse_save.generate $packmol.all.first.system.system_fra.packmol_input_show.browse_save.save $packmol.all.first.system.system_fra.packmol_input_show.browse_save.run -side top -fill y
+#	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.load $packmol.all.first.system.system_fra.packmol_input_show.browse_save.generate $packmol.all.first.system.system_fra.packmol_input_show.browse_save.save $packmol.all.first.system.system_fra.packmol_input_show.browse_save.run -side top -fill y
+	pack $packmol.all.first.system.system_fra.packmol_input_show.browse_save.generate $packmol.all.first.system.system_fra.packmol_input_show.browse_save.save $packmol.all.first.system.system_fra.packmol_input_show.browse_save.run -side top -fill y
 
 	pack $packmol.all.first.system.system_fra.packmol_input_show.show $packmol.all.first.system.system_fra.packmol_input_show.browse_save -side left -fill x -padx 1m
 
@@ -1965,7 +2550,7 @@ proc ::packmol::packmolview {} {
 
 	pack $packmol.all.first.general $packmol.all.first.mol_try $packmol.all.first.sel $packmol.all.first.system -side top -fill both
 
-	$packmol.all add $packmol.all.second -text "User Guides" -sticky news
+	$packmol.all add $packmol.all.second -text "PACKMOL User Guide" -sticky news
 	labelframe $packmol.all.second.guide
 
 	frame $packmol.all.second.guide.notebook
@@ -1973,10 +2558,11 @@ proc ::packmol::packmolview {} {
 	frame $packmol.all.second.guide.notebook.notebook.framework
 	scrollbar $packmol.all.second.guide.notebook.notebook.framework.scrolly -command [list ".packmolview.all.second.guide.notebook.notebook.framework.text" yview]
 	text $packmol.all.second.guide.notebook.notebook.framework.text -relief ridge -state normal -yscrollcommand [list ".packmolview.all.second.guide.notebook.notebook.framework.scrolly" set] -height 58 -width 155
-	$packmol.all.second.guide.notebook.notebook.framework.text insert 1.0 $packmol_userguide
+	$packmol.all.second.guide.notebook.notebook.framework.text insert end $packmol_userguide
+#	$packmol.all.second.guide.notebook.notebook.framework.text configure -font {-family Helvetica -size 8}
 	grid $packmol.all.second.guide.notebook.notebook.framework.text -row 0 -column 0 -sticky nsew
 	grid $packmol.all.second.guide.notebook.notebook.framework.scrolly -row 0 -column 1 -sticky ns
-	pack $packmol.all.second.guide.notebook.notebook.framework -fill both
+	pack $packmol.all.second.guide.notebook.notebook.framework -fill both -expand 1
 	pack $packmol.all.second.guide.notebook.notebook -expand 1 -fill both
 	pack $packmol.all.second.guide.notebook -expand 1 -fill both
 	pack $packmol.all.second.guide -expand 1 -fill both
@@ -2485,7 +3071,7 @@ proc ::packmol::file_end_edit {tbl row col text} {
 			if {[catch {set nvmax_each_f [expr $val / $molecular_volume_each]}]} {
 #				::packmol::refresh_filelist
 			} else {
-				set nvmax_each [format "%.2f" $nvmax_each_f]
+				set nvmax_each [expr int(ceil($nvmax_each_f))]
 				lset nvmax_list $id $nvmax_each
 			}
 			::packmol::refresh_filelist
@@ -2514,7 +3100,7 @@ proc ::packmol::file_end_edit {tbl row col text} {
                         if {[catch {set nvmax_each_f [expr $constrain_volume_each / $val]}]} {
 #                               ::packmol::refresh_filelist
                         } else {
-				set nvmax_each [format "%.2f" $nvmax_each_f]
+				set nvmax_each [expr int(ceil($nvmax_each_f))]
                                 lset nvmax_list $id $nvmax_each
                         }
 			::packmol::refresh_filelist
@@ -2551,7 +3137,7 @@ proc ::packmol::file_end_edit {tbl row col text} {
 			if {[catch {set nsmax_each_f [expr $val / $apl_each]}]} {
 #                               ::packmol::refresh_filelist
                         } else {
-				set nsmax_each [format "%.2f" $nsmax_each_f]
+				set nsmax_each [expr int(ceil($nsmax_each_f))]
                                 lset nsmax_list $id $nsmax_each
                         }
 			::packmol::refresh_filelist
@@ -2580,7 +3166,7 @@ proc ::packmol::file_end_edit {tbl row col text} {
                         if {[catch {set nsmax_each_f [expr $surface_area_each / $val]}]} {
 #                               ::packmol::refresh_filelist
                         } else {
-				set nsmax_each [format "%.2f" $nsmax_each_f]
+				set nsmax_each [expr int(ceil($nsmax_each_f))]
                                 lset nsmax_list $id $nsmax_each
                         }
 			::packmol::refresh_filelist
@@ -2792,7 +3378,7 @@ proc ::packmol::change_graphic_info {} {
 	set id [lindex $molid $mol_sel]
 	if {$change_which_graphic=="cube"} {
 		if {$need_to_reset==1} {
-			set graphic_info_single_update {0 0 0 0 0 1 0}
+			set graphic_info_single_update {6 0 0 0 0 1 0}
 			set cube_start_x 0
 			set cube_start_y 0
 			set cube_start_z 0
@@ -2925,6 +3511,11 @@ proc ::packmol::radius_end_edit {tbl row col text} {
         variable short_radius_scalelist
 	variable res_moleculelist
 	variable res_atomlist
+	variable graphic_info_list
+	variable graphic_line_list
+        variable graphic_label_list
+	variable draw_label
+	variable draw_shape
 
 	set new_molid [molinfo list]
         set new_molid_length [llength $new_molid]
@@ -2959,8 +3550,30 @@ proc ::packmol::radius_end_edit {tbl row col text} {
 	switch [$tbl columncget $col -name] {
 		Molecule {
 			set val $text
+
+			set res_id [lindex $res_moleculelist $row]
+			set need_to_del_list [lindex $graphic_line_list $row]
+        		set need_to_del_list_len [llength $need_to_del_list]
+        		set number 0
+        		while {$number<$need_to_del_list_len} {
+        		        set delete_num [lindex $need_to_del_list $number]
+        		        graphics $res_id delete $delete_num
+        		        incr number
+        		}
+
+        		set need_to_del_list [lindex $graphic_label_list $row]
+        		set need_to_del_list_len [llength $need_to_del_list]
+        		set number 0
+        		while {$number<$need_to_del_list_len} {
+        		        set delete_num [lindex $need_to_del_list $number]
+        		        graphics $res_id delete $delete_num
+        		        incr number
+			}
+
 			lset res_moleculelist $row $val
 			::packmol::refresh_constrain_list
+			::packmol::select_draw_label
+			::packmol::select_draw_shape
 		}
 		Atom {
 			set val $text
@@ -3189,14 +3802,6 @@ proc ::packmol::molinformation {} {
 		set constrain_single {0 0 0 0 0 0 0}
 		lappend constrain_list $constrain_single
 
-		set graphic_line_single {}
-		lappend graphic_line_list $graphic_line_single
-
-		set graphic_label_single {}
-		lappend graphic_label_list $graphic_label_single
-
-		set graphic_info_single {}
-		lappend graphic_info_list $graphic_info_single
 		incr number
 	}
 
@@ -5020,6 +5625,7 @@ proc ::packmol::add_sit {} {
 	variable molid
 	variable mol_sel
 	variable draw_label
+	variable label_size
 
 	::packmol::reset_zero
 	set all_mol [molinfo num]
@@ -5096,6 +5702,12 @@ proc ::packmol::add_sit {} {
 	lappend graphic_line_list $graphic_line_single
 
 	set graphic_label_single {}
+	if {$draw_label=="yes"} {
+		set label_flag [graphics $id point {0 0 0}]
+		lappend graphic_label_single $label_flag
+		set label_flag [graphics $id text {0 0 0} "(0, 0, 0)" size $label_size]
+		lappend graphic_label_single $label_flag
+	}
 	lappend graphic_label_list $graphic_label_single
 
 	set graphic "cube"
@@ -5403,6 +6015,7 @@ proc ::packmol::select_draw_label {} {
 	variable mol_material
 	variable res_moleculelist
 	variable molid
+	variable label_size
 
         set new_molid [molinfo list]
         set new_molid_length [llength $new_molid]
@@ -5431,21 +6044,19 @@ proc ::packmol::select_draw_label {} {
                 return
         }
 
-	if {$draw_label == "no"} {
-		set graphic_label_list_len [llength $graphic_label_list]
-		set number_fir 0
-		while {$number_fir < $graphic_label_list_len} {
-			set res_id [lindex $res_moleculelist $number_fir]
-			set graphic_label_list_single [lindex $graphic_label_list $number_fir]
-			set graphic_label_list_single_len [llength $graphic_label_list_single]
-			set number_sec 0
-			while {$number_sec < $graphic_label_list_single_len} {
-				set need_to_delete [lindex $graphic_label_list_single $number_sec]
-				graphics $res_id delete $need_to_delete
-				incr number_sec
-			}
-			incr number_fir
+	set graphic_label_list_len [llength $graphic_label_list]
+	set number_fir 0
+	while {$number_fir < $graphic_label_list_len} {
+		set res_id [lindex $res_moleculelist $number_fir]
+		set graphic_label_list_single [lindex $graphic_label_list $number_fir]
+		set graphic_label_list_single_len [llength $graphic_label_list_single]
+		set number_sec 0
+		while {$number_sec < $graphic_label_list_single_len} {
+			set need_to_delete [lindex $graphic_label_list_single $number_sec]
+			graphics $res_id delete $need_to_delete
+			incr number_sec
 		}
+		incr number_fir
 	}
 
 	if {$draw_label == "yes"} {
@@ -5480,12 +6091,12 @@ proc ::packmol::select_draw_label {} {
 				lappend cube_end_list $each_cube_end_x $each_cube_end_y $each_cube_end_z
 				set cube_label [graphics $res_id point $cube_start_list]
 				lappend cube_label_list $cube_label
-				set cube_label [graphics $res_id text $cube_start_list "($each_cube_start_x, $each_cube_start_y, $each_cube_start_z)"]
+				set cube_label [graphics $res_id text $cube_start_list "($each_cube_start_x, $each_cube_start_y, $each_cube_start_z)" size $label_size]
 				lappend cube_label_list $cube_label
 
 				set cube_label [graphics $res_id point $cube_end_list]
 				lappend cube_label_list $cube_label
-				set cube_label [graphics $res_id text $cube_end_list "($each_cube_end_x, $each_cube_end_y, $each_cube_end_z)"]
+				set cube_label [graphics $res_id text $cube_end_list "($each_cube_end_x, $each_cube_end_y, $each_cube_end_z)" size $label_size]
 				lappend cube_label_list $cube_label
 
 				lset graphic_label_list $number_fir $cube_label_list
@@ -5509,12 +6120,12 @@ proc ::packmol::select_draw_label {} {
 				lappend box_end_list $each_box_end_x $each_box_end_y $each_box_end_z
  				set box_label [graphics $res_id point $box_start_list]
 				lappend box_label_list $box_label
-				set box_label [graphics $res_id text $box_start_list "($each_box_start_x, $each_box_start_y, $each_box_start_z)"]
+				set box_label [graphics $res_id text $box_start_list "($each_box_start_x, $each_box_start_y, $each_box_start_z)" size $label_size]
 				lappend box_label_list $box_label
 
 				set box_label [graphics $res_id point $box_end_list]
 				lappend box_label_list $box_label
-				set box_label [graphics $res_id text $box_end_list "($each_box_end_x, $each_box_end_y, $each_box_end_z)"]
+				set box_label [graphics $res_id text $box_end_list "($each_box_end_x, $each_box_end_y, $each_box_end_z)" size $label_size]
 				lappend box_label_list $box_label
 
 				lset graphic_label_list $number_fir $box_label_list
@@ -5536,7 +6147,7 @@ proc ::packmol::select_draw_label {} {
 				set sphere_label [graphics $res_id point $sphere_center_list]
 				lappend sphere_label_list $sphere_label
 
-				set sphere_label [graphics $res_id text $sphere_center_list "($each_sphere_x, $each_sphere_y, $each_sphere_z)"]
+				set sphere_label [graphics $res_id text $sphere_center_list "($each_sphere_x, $each_sphere_y, $each_sphere_z)" size $label_size]
 				lappend sphere_label_list $sphere_label
 
 				set each_sphere_surface_x [expr $each_sphere_x + $each_sphere_r]
@@ -5545,7 +6156,7 @@ proc ::packmol::select_draw_label {} {
 				set sphere_label [graphics $res_id point $sphere_surface_list]
 				lappend sphere_label_list $sphere_label
 
-				set sphere_label [graphics $res_id text $sphere_surface_list "$number_fir"]
+				set sphere_label [graphics $res_id text $sphere_surface_list "Mol#$res_id" size $label_size]
 				lappend sphere_label_list $sphere_label
 
 				lset graphic_label_list $number_fir $sphere_label_list
@@ -5557,6 +6168,17 @@ proc ::packmol::select_draw_label {} {
 				set each_ellipsoid_color_id [lindex $graphic_info_list_single 8]
 				set each_ellipsoid_color [lindex $all_color_list $each_ellipsoid_color_id]
 				set color_list [split $each_ellipsoid_color " "]
+				set each_ellipsoid_a2 [lindex $graphic_info_list_single 4]
+                                set each_ellipsoid_b2 [lindex $graphic_info_list_single 5]
+                                set each_ellipsoid_c2 [lindex $graphic_info_list_single 6]
+                                set each_ellipsoid_d [lindex $graphic_info_list_single 7]
+
+				if {$each_ellipsoid_a2==0 || $each_ellipsoid_b2==0 || $each_ellipsoid_c2==0 || $each_ellipsoid_d==0} {
+                                        set emptylist {}
+                                        lset graphic_label_list $number_fir $emptylist
+                                        return
+                                }
+
 				graphics $res_id color [lindex $color_list 0]
 
 				set ellipsoid_label_list {}
@@ -5565,12 +6187,22 @@ proc ::packmol::select_draw_label {} {
 
 				set ellipsoid_label [graphics $res_id point $ellipsoid_center_list]
 				lappend ellipsoid_label_list $ellipsoid_label
-				set ellipsoid_label [graphics $res_id text $ellipsoid_center_list "($each_ellipsoid_a1, $each_ellipsoid_b1, $each_ellipsoid_c1)"]
+				set ellipsoid_label [graphics $res_id text $ellipsoid_center_list "($each_ellipsoid_a1, $each_ellipsoid_b1, $each_ellipsoid_c1)" size $label_size]
 				lappend ellipsoid_label_list $ellipsoid_label
 
 				lset graphic_label_list $number_fir $ellipsoid_label_list
 			}
 			if {$each_graphic == 3} {
+				set each_plane_a [lindex $graphic_info_list_single 1]
+                                set each_plane_b [lindex $graphic_info_list_single 2]
+                                set each_plane_c [lindex $graphic_info_list_single 3]
+
+                                if {$each_plane_a==0 && $each_plane_b==0 && $each_plane_b==0} {
+                                        set emptylist {}
+                                        lset graphic_label_list $number_fir $emptylist
+                                        return
+                                }
+
 				set each_plane_color_id [lindex $graphic_info_list_single 5]
 				set each_plane_color [lindex $all_color_list $each_plane_color_id]
 				set color_list [split $each_plane_color " "]
@@ -5586,7 +6218,7 @@ proc ::packmol::select_draw_label {} {
 				set plane_label [graphics $res_id point $plane_center_list]
 				lappend plane_label_list $plane_label
 
-				set plane_label [graphics $res_id text $plane_center_list "($each_plane_center_x, $each_plane_center_y, $each_plane_center_z)"]
+				set plane_label [graphics $res_id text $plane_center_list "($each_plane_center_x, $each_plane_center_y, $each_plane_center_z)" size $label_size]
 				lappend plane_label_list $plane_label
 
 				lset graphic_label_list $number_fir $plane_label_list
@@ -5610,7 +6242,7 @@ proc ::packmol::select_draw_label {} {
 				set cylinder_label [graphics $res_id point $cylinder_center_fir_list]
 				lappend cylinder_label_list $cylinder_label
 
-				set cylinder_label [graphics $res_id text $cylinder_center_fir_list "($each_cylinder_fir_circle_x, $each_cylinder_fir_circle_y, $each_cylinder_fir_circle_z)"]
+				set cylinder_label [graphics $res_id text $cylinder_center_fir_list "($each_cylinder_fir_circle_x, $each_cylinder_fir_circle_y, $each_cylinder_fir_circle_z)" size $label_size]
 				lappend cylinder_label_list $cylinder_label
 
 				set cylinder_center_sec_list {}
@@ -5619,7 +6251,7 @@ proc ::packmol::select_draw_label {} {
 				set cylinder_label [graphics $res_id point $cylinder_center_sec_list]
 				lappend cylinder_label_list $cylinder_label
 
-				set cylinder_label [graphics $res_id text $cylinder_center_sec_list "($each_cylinder_sec_circle_x, $each_cylinder_sec_circle_y, $each_cylinder_sec_circle_z)"]
+				set cylinder_label [graphics $res_id text $cylinder_center_sec_list "($each_cylinder_sec_circle_x, $each_cylinder_sec_circle_y, $each_cylinder_sec_circle_z)" size $label_size]
 				lappend cylinder_label_list $cylinder_label
 
 				lset graphic_label_list $number_fir $cylinder_label_list
@@ -5665,22 +6297,20 @@ proc ::packmol::select_draw_shape {} {
                 return
         }
 
-	if {$draw_shape == "no"} {
-                set graphic_line_list_len [llength $graphic_line_list]
-                set number_fir 0
-                while {$number_fir < $graphic_line_list_len} {
-			set res_id [lindex $res_moleculelist $number_fir]
-                        set graphic_line_list_single [lindex $graphic_line_list $number_fir]
-                        set graphic_line_list_single_len [llength $graphic_line_list_single]
-                        set number_sec 0
-                        while {$number_sec < $graphic_line_list_single_len} {
-				set need_to_delete [lindex $graphic_line_list_single $number_sec]
-				graphics $res_id delete $need_to_delete
-                                incr number_sec
-                        }
-                        incr number_fir
+	set graphic_line_list_len [llength $graphic_line_list]
+	set number_fir 0
+	while {$number_fir < $graphic_line_list_len} {
+		set res_id [lindex $res_moleculelist $number_fir]
+                set graphic_line_list_single [lindex $graphic_line_list $number_fir]
+                set graphic_line_list_single_len [llength $graphic_line_list_single]
+                set number_sec 0
+                while {$number_sec < $graphic_line_list_single_len} {
+			set need_to_delete [lindex $graphic_line_list_single $number_sec]
+			graphics $res_id delete $need_to_delete
+                        incr number_sec
                 }
-        }
+                incr number_fir
+	}
 
 	if {$draw_shape == "yes"} {
 		set res_moleculelist_len [llength $res_moleculelist]
@@ -5808,6 +6438,13 @@ proc ::packmol::select_draw_shape {} {
 				set each_ellipsoid_c2 [lindex $graphic_info_list_single 6]
 				set each_ellipsoid_d [lindex $graphic_info_list_single 7]
                                 set each_ellipsoid_color_id [lindex $graphic_info_list_single 8]
+
+				if {$each_ellipsoid_a2==0 || $each_ellipsoid_b2==0 || $each_ellipsoid_c2==0 || $each_ellipsoid_d==0} {
+					set emptylist {}
+					lset graphic_info_list $number_fir $emptylist
+					return
+				}
+
                                 set each_ellipsoid_color [lindex $all_color_list $each_ellipsoid_color_id]
                                 set color_list [split $each_ellipsoid_color " "]
                                 graphics $res_id color [lindex $color_list 0]
@@ -5821,6 +6458,16 @@ proc ::packmol::select_draw_shape {} {
 				lset graphic_line_list $number_fir $ellipsoid_line_list
 			}
 			if {$each_graphic == 3} {
+				set each_plane_a [lindex $graphic_info_list_single 1]
+                                set each_plane_b [lindex $graphic_info_list_single 2]
+                                set each_plane_c [lindex $graphic_info_list_single 3]
+
+                                if {$each_plane_a==0 && $each_plane_b==0 && $each_plane_b==0} {
+                                        set emptylist {}
+                                        lset graphic_info_list $number_fir $emptylist
+                                        return
+                                }
+
 				set each_plane_color_id [lindex $graphic_info_list_single 5]
                                 set each_plane_color [lindex $all_color_list $each_plane_color_id]
                                 set color_list [split $each_plane_color " "]
@@ -6078,6 +6725,7 @@ proc ::packmol::draw_cube_label {} {
         variable molid
         variable draw_label
 	variable res_moleculelist
+	variable label_size
 
 	set res_id [lindex $res_moleculelist $sit_sel]
         set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -6109,12 +6757,12 @@ proc ::packmol::draw_cube_label {} {
         lappend cube_end_list $cube_end_x $cube_end_y $cube_end_z
         set cube_label [graphics $res_id point $cube_start_list]
         lappend cube_label_list $cube_label
-        set cube_label [graphics $res_id text $cube_start_list "($cube_start_x, $cube_start_y, $cube_start_z)"]
+        set cube_label [graphics $res_id text $cube_start_list "($cube_start_x, $cube_start_y, $cube_start_z)" size $label_size]
         lappend cube_label_list $cube_label
 
         set cube_label [graphics $res_id point $cube_end_list]
         lappend cube_label_list $cube_label
-        set cube_label [graphics $res_id text $cube_end_list "($cube_end_x, $cube_end_y, $cube_end_z)"]
+        set cube_label [graphics $res_id text $cube_end_list "($cube_end_x, $cube_end_y, $cube_end_z)" size $label_size]
         lappend cube_label_list $cube_label
 
         lset graphic_label_list $sit_sel $cube_label_list
@@ -6288,6 +6936,7 @@ proc ::packmol::draw_box_label {} {
         variable molid
 	variable draw_label
 	variable res_moleculelist
+	variable label_size
 
 	set res_id [lindex $res_moleculelist $sit_sel]
 	set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -6315,12 +6964,12 @@ proc ::packmol::draw_box_label {} {
 	lappend box_end_list $box_end_x $box_end_y $box_end_z
 	set box_label [graphics $res_id point $box_start_list]
 	lappend box_label_list $box_label
-	set box_label [graphics $res_id text $box_start_list "($box_start_x, $box_start_y, $box_start_z)"]
+	set box_label [graphics $res_id text $box_start_list "($box_start_x, $box_start_y, $box_start_z)" size $label_size]
 	lappend box_label_list $box_label
 
 	set box_label [graphics $res_id point $box_end_list]
 	lappend box_label_list $box_label
-	set box_label [graphics $res_id text $box_end_list "($box_end_x, $box_end_y, $box_end_z)"]
+	set box_label [graphics $res_id text $box_end_list "($box_end_x, $box_end_y, $box_end_z)" size $label_size]
 	lappend box_label_list $box_label
 
         lset graphic_label_list $sit_sel $box_label_list
@@ -6342,7 +6991,7 @@ proc ::packmol::get_sphere_area {} {
         variable sphere_r
 	variable sphere_area
 
-	set pi 3.14
+	set pi 3.1415926
 	set sphere_area_f [expr 4 * $pi * $sphere_r * $sphere_r]
 	set sphere_area [format "%.2f" $sphere_area_f]
 }
@@ -6474,6 +7123,7 @@ proc ::packmol::draw_sphere_label {} {
         variable molid
         variable draw_label
 	variable res_moleculelist
+	variable label_size
 
 	set res_id [lindex $res_moleculelist $sit_sel]
         set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -6501,7 +7151,7 @@ proc ::packmol::draw_sphere_label {} {
 	set sphere_label [graphics $res_id point $sphere_center_list]
 	lappend sphere_label_list $sphere_label
 
-	set sphere_label [graphics $res_id text $sphere_center_list "($sphere_x, $sphere_y, $sphere_z)"]
+	set sphere_label [graphics $res_id text $sphere_center_list "($sphere_x, $sphere_y, $sphere_z)" size $label_size]
 	lappend sphere_label_list $sphere_label
 
 	set sphere_surface_x [expr $sphere_x + $sphere_r]
@@ -6510,7 +7160,7 @@ proc ::packmol::draw_sphere_label {} {
 	set sphere_label [graphics $res_id point $sphere_surface_list]
 	lappend sphere_label_list $sphere_label
 
-	set sphere_label [graphics $res_id text $sphere_surface_list "Mol# $res_id"]
+	set sphere_label [graphics $res_id text $sphere_surface_list "Mol#$res_id" size $label_size]
 	lappend sphere_label_list $sphere_label
 
         lset graphic_label_list $sit_sel $sphere_label_list
@@ -6528,6 +7178,7 @@ proc ::packmol::draw_plane {} {
         variable sit_sel
         variable graphic_line_list
         variable graphic_info_list
+	variable graphic_label_list
         variable sitlist
 	variable radiuslist
 	variable relativelist
@@ -6644,6 +7295,17 @@ proc ::packmol::draw_plane {} {
 		lappend plane_info_single_update $plane_d
 		lappend plane_info_single_update [lindex $color_list 0]
 		lset graphic_info_list $sit_sel $plane_info_single_update
+
+		set res_id [lindex $res_moleculelist $sit_sel]
+        	set need_to_del_list [lindex $graphic_label_list $sit_sel]
+        	set need_to_del_list_len [llength $need_to_del_list]
+        	set number 0
+        	while {$number<$need_to_del_list_len} {
+        	        set delete_num [lindex $need_to_del_list $number]
+        	        graphics $res_id delete $delete_num
+			incr number
+		}
+
 		return
 	}
 
@@ -6845,6 +7507,7 @@ proc ::packmol::draw_plane_label {} {
         variable molid
 	variable draw_label
 	variable res_moleculelist
+	variable label_size
 
 	set res_id [lindex $res_moleculelist $sit_sel]
         set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -6872,7 +7535,7 @@ proc ::packmol::draw_plane_label {} {
         set plane_label [graphics $res_id point $plane_center_list]
         lappend plane_label_list $plane_label
 
-        set plane_label [graphics $res_id text $plane_center_list "($plane_center_x, $plane_center_y, $plane_center_z)"]
+        set plane_label [graphics $res_id text $plane_center_list "($plane_center_x, $plane_center_y, $plane_center_z)" size $label_size]
         lappend plane_label_list $plane_label
 
         lset graphic_label_list $sit_sel $plane_label_list
@@ -6889,7 +7552,7 @@ proc ::packmol::get_cylinder_volume {} {
 	variable cylinder_length
 	variable cylinder_value
 
-	set pi 3.14
+	set pi 3.1415926
 	set bottom [expr $pi * $cylinder_r * $cylinder_r]
 	set cylinder_value_f [expr $bottom * $cylinder_length]
 	set cylinder_value [format "%.2f" $cylinder_value_f]
@@ -6899,7 +7562,7 @@ proc ::packmol::get_cylinder_area {} {
 	variable cylinder_r
 	variable cylinder_area
 
-	set pi 3.14
+	set pi 3.1415926
 	set cylinder_area_f [expr $pi * $cylinder_r * $cylinder_r]
 	set cylinder_area [format "%.2f" $cylinder_area_f]
 }
@@ -7081,6 +7744,7 @@ proc ::packmol::draw_cylinder_label {} {
         variable molid
 	variable draw_label
 	variable res_moleculelist
+	variable label_size
 
         set res_id [lindex $res_moleculelist $sit_sel]
         set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -7108,7 +7772,7 @@ proc ::packmol::draw_cylinder_label {} {
         set cylinder_label [graphics $res_id point $cylinder_center_fir_list]
         lappend cylinder_label_list $cylinder_label
 
-        set cylinder_label [graphics $res_id text $cylinder_center_fir_list "($cylinder_fir_circle_x, $cylinder_fir_circle_y, $cylinder_fir_circle_z)"]
+        set cylinder_label [graphics $res_id text $cylinder_center_fir_list "($cylinder_fir_circle_x, $cylinder_fir_circle_y, $cylinder_fir_circle_z)" size $label_size]
         lappend cylinder_label_list $cylinder_label
 
 	set cylinder_center_sec_list {}
@@ -7117,7 +7781,7 @@ proc ::packmol::draw_cylinder_label {} {
         set cylinder_label [graphics $res_id point $cylinder_center_sec_list]
         lappend cylinder_label_list $cylinder_label
 
-        set cylinder_label [graphics $res_id text $cylinder_center_sec_list "($cylinder_sec_circle_x_new, $cylinder_sec_circle_y_new, $cylinder_sec_circle_z_new)"]
+        set cylinder_label [graphics $res_id text $cylinder_center_sec_list "($cylinder_sec_circle_x_new, $cylinder_sec_circle_y_new, $cylinder_sec_circle_z_new)" size $label_size]
         lappend cylinder_label_list $cylinder_label
 
         lset graphic_label_list $sit_sel $cylinder_label_list
@@ -7198,7 +7862,7 @@ proc ::packmol::get_ellipsoid_volume {} {
 	variable ellipsoid_d
 	variable ellipsoid_value
 
-	set pi 3.14
+	set pi 3.1415926
 	set ellipsoid_value_f [expr $ellipsoid_a2 * $ellipsoid_d * $ellipsoid_b2 * $ellipsoid_d * $ellipsoid_c2 * $ellipsoid_d * $pi * 4 / 3]
 	set ellipsoid_value [format "%.2f" $ellipsoid_value_f]
 }
@@ -7213,7 +7877,7 @@ proc ::packmol::get_ellipsoid_area {} {
         variable ellipsoid_d
         variable ellipsoid_area
 
-        set pi 3.14
+        set pi 3.1415926
 	set ellipsoid_area_f [expr ($ellipsoid_a2 * $ellipsoid_d * $ellipsoid_b2 * $ellipsoid_d + $ellipsoid_a2 * $ellipsoid_d * $ellipsoid_c2 * $ellipsoid_d + $ellipsoid_b2 * $ellipsoid_d * $ellipsoid_c2 * $ellipsoid_d) * $pi * 4 / 3]
 	set ellipsoid_area [format "%.2f" $ellipsoid_area_f]
 }
@@ -7234,6 +7898,7 @@ proc ::packmol::draw_ellipsoid {} {
 	variable sit_sel
 	variable graphic_line_list
 	variable graphic_info_list
+	variable graphic_label_list
 	variable graphic
 	variable sitlist
 	variable radiuslist
@@ -7328,6 +7993,16 @@ proc ::packmol::draw_ellipsoid {} {
 		lappend ellipsoid_info_single_update $ellipsoid_resolution
 		lset graphic_info_list $sit_sel $ellipsoid_info_single_update
 
+		set res_id [lindex $res_moleculelist $sit_sel]
+                set need_to_del_list [lindex $graphic_label_list $sit_sel]
+                set need_to_del_list_len [llength $need_to_del_list]
+                set number 0
+                while {$number<$need_to_del_list_len} {
+                        set delete_num [lindex $need_to_del_list $number]
+                        graphics $res_id delete $delete_num
+                        incr number
+                }
+
 		return
 	}
 
@@ -7387,6 +8062,7 @@ proc ::packmol::draw_ellipsoid_label {} {
         variable molid
 	variable draw_label
 	variable res_moleculelist
+	variable label_size
 
 	set res_id [lindex $res_moleculelist $sit_sel]
         set need_to_del_list [lindex $graphic_label_list $sit_sel]
@@ -7414,7 +8090,7 @@ proc ::packmol::draw_ellipsoid_label {} {
         set ellipsoid_label [graphics $res_id point $ellipsoid_center_list]
         lappend ellipsoid_label_list $ellipsoid_label
 
-        set ellipsoid_label [graphics $res_id text $ellipsoid_center_list "($ellipsoid_a1, $ellipsoid_b1, $ellipsoid_c1)"]
+        set ellipsoid_label [graphics $res_id text $ellipsoid_center_list "($ellipsoid_a1, $ellipsoid_b1, $ellipsoid_c1)" size $label_size]
         lappend ellipsoid_label_list $ellipsoid_label
 
         lset graphic_label_list $sit_sel $ellipsoid_label_list
@@ -7620,9 +8296,10 @@ proc ::packmol::show_packmol_input {} {
         variable xygauss_zero_return_flag
 	variable fscale_short_radius_scale_wrong
 	variable res_atom_flag
+	variable click_save
 
         set tab "\t"
-        set pi 3.14
+        set pi 3.1415926
 	set ellipsoid_return_flag 0
         set plane_return_flag 0
         set xygauss_number_return_flag 0
@@ -7710,16 +8387,26 @@ proc ::packmol::show_packmol_input {} {
 		append show_str $pbc_str_info
 	}
 
+	set res_res_moleculelist_unique [lsort -unique $res_moleculelist]
+	set res_res_moleculelist_unique_len [llength $res_res_moleculelist_unique]
 	set res_moleculelist_len [llength $res_moleculelist]
+
+	set res_unique_number 0
+	while {$res_unique_number<$res_res_moleculelist_unique_len} {
+		set res_unique_number_id [lindex $res_res_moleculelist_unique $res_unique_number]
+
         set res_number 0
+	set same_number 0
         while {$res_number<$res_moleculelist_len} {
 		set res_number_id [lindex $res_moleculelist $res_number]
+		if {$res_number_id==$res_unique_number_id} {
 		set molid_index [lsearch $molid $res_number_id]
                 set file_name_single [lindex $thesefile $molid_index]
 		
+		if {$same_number==0} {
                 set structure "structure"
                 set structure_str_info [format "%s %s%s" $structure "\"$file_name_single\"" $return_flag]
-                append show_str $structure_str_info
+               	append show_str $structure_str_info
 
                 set number_str "number"
                 set number_each [lindex $structure_num_list $res_number_id]
@@ -7826,6 +8513,8 @@ proc ::packmol::show_packmol_input {} {
                                 append show_str $constrain_z_str_info
                         }
                 }
+		}
+		incr same_number
 
 		set atom_flag 0
 		set sitlist_single_res [lindex $sitlist $res_number]
@@ -8022,10 +8711,13 @@ proc ::packmol::show_packmol_input {} {
                         set end_atom_str_info [format "%s%s%s" $tab $end_atom_str $return_flag]
                         append show_str $end_atom_str_info
                 }
+		}
+		incr res_number
+	}
 		set end_structure "end structure\n"
 		append show_str $end_structure
 
-		incr res_number
+		incr res_unique_number
 	}
 
 	if {$add_amber_ter=="yes"} {
@@ -8137,7 +8829,15 @@ proc ::packmol::show_packmol_input {} {
 	}
 
 	set generate_packmol_input $show_str
-
+	if {$click_save==0} {
+		set timestamp [clock format [clock seconds] -format "%Y%m%d_%H%M%S"]
+		set packmol_timestamp_file [format "packmol-%s.inp" $timestamp]
+		set f_packmol_timestamp_file [open $packmol_timestamp_file w]
+		puts $f_packmol_timestamp_file $generate_packmol_input
+		close $f_packmol_timestamp_file
+	} else {
+		set click_save 0
+	}
 
 	destroy .packmolview.all.first.system.system_fra.packmol_input_show.show.notebook
 	ttk::notebook .packmolview.all.first.system.system_fra.packmol_input_show.show.notebook
@@ -8218,9 +8918,10 @@ proc ::packmol::generate_output {} {
 	variable is_writecrd
 	variable fscale_short_radius_scale_wrong
 	variable res_atom_flag
+	variable click_save
 
 	set tab "\t"
-	set pi 3.14
+	set pi 3.1415926
 #	set generate_packmol_input ""
 
 	set new_molid [molinfo list]
@@ -8271,6 +8972,7 @@ proc ::packmol::generate_output {} {
 		tk_messageBox -title "File name Error" -parent .packmolview -type ok -message $msg
 		return
 	}
+	set click_save 1
 	::packmol::show_packmol_input
 	if {$fscale_short_radius_scale_wrong==1} {
 		return
@@ -8311,13 +9013,23 @@ proc ::packmol::generate_output {} {
 		puts $f $pbc_str_info
         }
 
+	set res_res_moleculelist_unique [lsort -unique $res_moleculelist]
+        set res_res_moleculelist_unique_len [llength $res_res_moleculelist_unique]
 	set res_moleculelist_len [llength $res_moleculelist]
+
+	set res_unique_number 0
+        while {$res_unique_number<$res_res_moleculelist_unique_len} {
+                set res_unique_number_id [lindex $res_res_moleculelist_unique $res_unique_number]
+
         set res_number 0
+	set same_number 0
         while {$res_number<$res_moleculelist_len} {
                 set res_number_id [lindex $res_moleculelist $res_number]
+		if {$res_number_id==$res_unique_number_id} {
                 set molid_index [lsearch $molid $res_number_id]
                 set file_name_single [lindex $thesefile $molid_index]
 
+		if {$same_number==0} {
                 set structure "structure"
                 set structure_str_info [format "%s %s" $structure "\"$file_name_single\""]
                 puts $f $structure_str_info
@@ -8427,6 +9139,8 @@ proc ::packmol::generate_output {} {
                                 puts $f $constrain_z_str_info
                         }
                 }
+		}
+		incr same_number
 
 		set atom_flag 0
                 set sitlist_single_res [lindex $sitlist $res_number]
@@ -8624,10 +9338,13 @@ proc ::packmol::generate_output {} {
                         set end_atom_str_info [format "%s%s" $tab $end_atom_str]
                         puts $f $end_atom_str_info
                 }
-	        set end_structure "end structure"
-        	puts $f $end_structure
-
+		}
                 incr res_number
+	}
+		set end_structure "end structure"
+		puts $f $end_structure
+
+		incr res_unique_number
 	}
 
 	if {$add_amber_ter=="yes"} {
@@ -8864,14 +9581,14 @@ proc ::packmol::general_setting {} {
 	if {[catch {set f [open $vmd_packmol_json_pwd r]}]} {
 		if {$system=="Linux"} {
 			set f_new [open $vmd_packmol_json_pwd w]
-			set dict_info [dict create "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "checkbox" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
+			set dict_info [dict create "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "load_output_structure" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
 			set packmol_pwd [::packmol::dict2json $dict_info]
 			puts $f_new $packmol_pwd
 			close $f_new
 		}
 		if {$system=="Windows"} {
 			set f_new [open $vmd_packmol_json_pwd w]
-			set dict_info [dict create "packmol_pwd" "\"$packmol_name\"" "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "checkbox" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
+			set dict_info [dict create "packmol_pwd" "\"$packmol_name\"" "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "load_output_structure" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
 			set packmol_pwd [::packmol::dict2json $dict_info]
 			puts $f_new $packmol_pwd
 			close $f_new
@@ -8923,7 +9640,7 @@ proc ::packmol::change_general_setting {} {
 
 	if {$system=="Linux"} {
 		set f_new [open $vmd_packmol_json_pwd w]
-		set dict_info [dict create "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "checkbox" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
+		set dict_info [dict create "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "load_output_structure" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
 		set packmol_pwd [::packmol::dict2json $dict_info]
 		puts $f_new $packmol_pwd
 		close $f_new
@@ -8931,7 +9648,7 @@ proc ::packmol::change_general_setting {} {
 
 	if {$system=="Windows"} {
 		set f_new [open $vmd_packmol_json_pwd w]
-		set dict_info [dict create "packmol_pwd" "\"$packmol_name\"" "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "checkbox" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
+		set dict_info [dict create "packmol_pwd" "\"$packmol_name\"" "packmol_import" "\"$import_file_dir\"" "outputdir" "\"$outputdir\"" "outputfilename" "\"$outputfilename_write\"" "tolerance" $tolerance "filetype" $file_type "add_amber_ter" $add_amber_ter "add_box_sides" $box_sides "sidemax" $sidemax "seed" $seed "randominitialpoint" $use_randominitialpoint "avoid_overlap" $avoid_overlap "discale" $discale "maxit" $maxit "movebadrandom" $movebadrandom "nloop" $nloop "precision" $precision "writeout" $writeout "writebad" $writebad "check" $check "iprint1" $iprint1 "iprint2" $iprint2 "fbins" $fbins "chkgrad" $chkgrad "load_output_structure" $checkbox "use_short_tol" $use_short_tol "short_tol_dist" $short_tol_dist "short_tol_scale" $short_tol_scale "movefrac" $movefrac "connect" $connect]
 		set packmol_pwd [::packmol::dict2json $dict_info]
 		puts $f_new $packmol_pwd
 		close $f_new
@@ -9103,7 +9820,7 @@ proc ::packmol::use_setted {} {
 			::packmol::general_setting
 			return
 		}
-		if {[catch {set checkbox [dict get $dict_info "checkbox"]}]} {
+		if {[catch {set checkbox [dict get $dict_info "load_output_structure"]}]} {
 			file delete $vmd_packmol_json_pwd
 			::packmol::general_setting
 			return
@@ -9196,7 +9913,7 @@ proc ::packmol::default_setting {} {
         variable chkgrad
         set chkgrad "no"
 	variable checkbox
-	set checkbox "no"
+	set checkbox "yes"
 	variable use_short_tol
 	set use_short_tol "no"
 	variable short_tol_dist
