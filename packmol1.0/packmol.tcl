@@ -307,7 +307,7 @@ namespace eval ::packmol:: {
 	variable sidemax
 	set sidemax 1000
 	variable seed
-	set seed 0
+	set seed -1
 	variable use_randominitialpoint
 	set use_randominitialpoint "no"
 	variable avoid_overlap
@@ -9883,7 +9883,7 @@ proc ::packmol::default_setting {} {
         variable sidemax
         set sidemax 1000
         variable seed
-        set seed 0
+        set seed -1
         variable use_randominitialpoint
         set use_randominitialpoint "no"
         variable avoid_overlap
