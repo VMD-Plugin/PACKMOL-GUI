@@ -32,7 +32,6 @@ FILES STRUCTURE
 ---------- hydroxide.pdb<br>
  ---------- nitrate.pdb<br>
 ---------- pertechnetate.pdb<br>
- ---------- spherical.pdb<br>
 ---------- sulfate.pdb<br>
 ---------- tip3p.pdb<br>
 **packmol1.0**: (Tcl/Tk code and user configuration files for PACKMOL-GUI.)<br>
