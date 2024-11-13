@@ -4,7 +4,7 @@ FILES STRUCTURE
 ======
 **PACKMOL-Windows-20.15.0**: (Precompiled PACKMOL program and required dynamic link libraries for Win10 x64 system)<br>
  ---------- README.md<br>
- ---------- MIT License
+ ---------- MIT License<br>
  ---------- libifcoremd.dll<br> 
  ---------- libifportmd.dll<br>
  ---------- libmmd.dll<br>
