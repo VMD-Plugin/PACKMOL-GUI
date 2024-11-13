@@ -3,7 +3,8 @@ The PACKMOL-GUI was developed utilizing Tcl/Tk, the embedded development interfa
 FILES STRUCTURE
 ======
 **PACKMOL-Windows-20.15.0**: (Precompiled PACKMOL program and required dynamic link libraries for Win10 x64 system)<br>
----------- README.md<br>
+ ---------- README.md<br>
+ ---------- MIT License
  ---------- libifcoremd.dll<br> 
  ---------- libifportmd.dll<br>
  ---------- libmmd.dll<br>
