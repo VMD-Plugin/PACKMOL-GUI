@@ -2,7 +2,7 @@ README
 ======
 With PACKMOL's transition to Julia for cross-platform compilation, precompiled Windows versions are no longer provided. Here, we offer a Windows-compiled version. If issues arise, users are encouraged to directly use the Julia-generated executable or compile the code themselves using Visual Studio.
 
-This README.md states that the PACKMOL-Windows-20.15.0 is available under the **MIT License**.
+The PACKMOL Windows version 20.15.0 is available under the **MIT License**.
 
 =======================================================================================
 
