@@ -29,7 +29,7 @@ The configuration file paths are:<br>
 Windows: YOUR-VMD-Installation-Directory\vmd.rc<br>
 Linux: YOUR-VMD-Installation-Directory/lib/vmd/.vmdrc<br>
 macOS: YOUR-VMD-Installation-Directory/Contents/vmd/.vmdrc<br>
-Note: If Windows users place packmol1.0 in another folder with spaces, please remember to use the escape character "\\".<br> 
+_**Note**_: If Windows users place packmol1.0 in another folder with spaces, please remember to use the escape character "\\".<br> 
 For example, "lappend auto_path C:/Program Files/packmol1.0" should be written as “lappend auto_path C:/Program\ Files/packmol1.0”.<br>
 # 3. Launch VMD<br>
 After starting VMD, you can access the PACKMOL-GUI via the Extensions -> Modeling -> PACKMOL submenu in the VMD Main menu.
