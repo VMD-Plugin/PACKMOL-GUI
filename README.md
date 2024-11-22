@@ -14,7 +14,7 @@ datasets-Biox<br>
 ------------------------------------------------------------------------------------------<br>
 **Users of Metal-Organic Frameworks Modeling**<br>
 packmol1.0<br>
-datasets-CoRE-MOFs<br>
+datasets-CoRE-MOFs with a unit cell size larger than 2.4 nm<br>
 Note: The datasets-CoRE-MOFs file is 135 MB compressed and 3.6 GB when extracted.<br>
 To extract CoRE-MOFs-PDB file, use the following commands:<br>
 cat CoRE-MOFs-PDB.tar.xz.part* > temp.xz<br>
