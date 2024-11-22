@@ -20,14 +20,16 @@ To extract CoRE-MOFs-PDB file, use the following commands:<br>
 cat CoRE-MOFs-PDB.tar.xz.part* > temp.xz<br>
 tar -xvf temp.xz<br>
 ------------------------------------------------------------------------------------------<br>
-For improved file organization, users are advised to place the **packmol1.0** folder in the plugins/noarch/tcl subdirectory of VMD installation directory, though they can choose any location they prefer.<br>
+To prevent file path issues during installation, it is strongly recommended that users place the **packmol1.0** folder in the **YOUR-VMD-Installation-Directory/plugins/noarch/tcl**. Alternatively, users can choose any location but must use the **lappend auto_path** command to specify the absolute file path..<br>
 # **2. Configure VMD**<br>
 Users are able to install PACKMOL-GUI from any location within the "Extension" menu. However, considering that PACKMOL serves as a modeling tool, it is recommended that users place it under the "Extension/Modeling" submenu for optimal organization and functionality.
 Locate the VMD startup configuration file and add the following lines:<br>
 __vmd_install_extension packmol packmol_tk "Modeling/PACKMOL"__<br>
 The configuration file paths are:<br>
-Windows: YOUR-vmd-installation-directory\vmd.rc<br>
-Linux: YOUR-vmd-installation-directory/lib/vmd/.vmdrc<br>
-macOS: YOUR-vmd-installation-directory/Contents/vmd/.vmdrc<br>
+Windows: YOUR-VMD-Installation-Directory\vmd.rc<br>
+Linux: YOUR-VMD-Installation-Directory/lib/vmd/.vmdrc<br>
+macOS: YOUR-VMD-Installation-Directory/Contents/vmd/.vmdrc<br>
+Note: If Windows users place packmol1.0 in another folder with spaces, please remember to use the escape character "\\".<br> 
+For example, "lappend auto_path C:/Program Files/packmol1.0" should be written as “lappend auto_path C:/Program\ Files/packmol1.0”.<br>
 # 3. Launch VMD<br>
 After starting VMD, you can access the PACKMOL-GUI via the Extensions -> Modeling -> PACKMOL submenu in the VMD Main menu.
