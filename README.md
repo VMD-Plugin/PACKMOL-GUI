@@ -47,13 +47,14 @@ INSTALLATION
 Download and extract the required files. Note: The files in the CoRE-MOFs-PDB directory have been expanded with Periodic Boundary Conditions (PBC), resulting in a total size of 3.6 GB. If you do not require this dataset (datasets/CoRE-MOF-PDB.tar.xz.part*), you can either delete or skip extracting it. To extract this file, use the following commands:<br>
 cat CoRE-MOFs-PDB.tar.xz.part* > temp.xz<br>
 tar -xvf temp.xz<br>
-Define $VMD_HOME as your VMD installation path. Move the **packmol1.0** folder to the **$VMD_HOME/plugins/noarch/tcl** subdirectory.<br>
+Move the **packmol1.0** folder to the **YOUR-vmd-installation-directory/plugins/noarch/tcl** subdirectory.<br>
 # **2. Configure VMD**<br>
+Users are able to install PACKMOL-GUI from any location within the "Extension" menu. However, considering that PACKMOL serves as a modeling tool, it is not optimally suited for submenus such as "Analysis," "Data," or "Simulation." Therefore, it is recommended that users place it under the "Extension/Modeling" submenu for optimal organization and functionality.
 Locate the VMD startup configuration file and add the following lines:<br>
 __vmd_install_extension packmol packmol_tk "Modeling/PACKMOL"__<br>
 The configuration file paths are:<br>
-Windows: $VMD_HOME\vmd.rc<br>
-Linux: $VMD_HOME/lib/vmd/.vmdrc<br>
-macOS: $VMD_HOME/Contents/vmd/.vmdrc<br>
+Windows: YOUR-vmd-installation-directory\vmd.rc<br>
+Linux: YOUR-vmd-installation-directory/lib/vmd/.vmdrc<br>
+macOS: YOUR-vmd-installation-directory/Contents/vmd/.vmdrc<br>
 # 3. Launch VMD<br>
 After starting VMD, you can access the PACKMOL-GUI via the Extensions -> Modeling -> PACKMOL submenu in the VMD Main menu.
