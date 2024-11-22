@@ -9,14 +9,15 @@ FILES STRUCTURE
  ---------- libifportmd.dll<br>
  ---------- libmmd.dll<br>
  ---------- packmol.exe<br>
-**Datasets**: (Datasets utilized for the molecular modeling of materials, biological molecules, gases, and liquids)<br>
- ---------- CoRE-MOFs-PDB.tar.xz.partaa (The split volume-a of CoRE-MOFs PDB format dataset)<br>
- ---------- CoRE-MOFs-PDB.tar.xz.partab (The split volume-b of CoRE-MOFs PDB format dataset)<br>
- ---------- CoRE-MOFs-PDB.tar.xz.partac (The split volume-c of CoRE-MOFs PDB format dataset)<br>
+**datasets-BioX**: (Datasets utilized for the molecular modeling of biological molecules, gases, and liquids)<br>
  ---------- packmol-biomolecules.tar (Phospholipids and derivatives, amino acids, nucleotides)<br>
  ---------- packmol-gas.tar (Gas molecules)<br>
  ---------- packmol-ions.tar (Common anions, cations, and some radioactive nuclide ions)<br>
  ---------- packmol-solvent.tar (Organic solvent and water molecule models)<br>
+ **datasets-CoRE-MOFs**: (Datasets utilized for the molecular modeling of Metal-Organic-Frameworks with a unit cell size larger than 2.4 nm)<br>
+ ---------- CoRE-MOFs-PDB.tar.xz.partaa (The split volume-a of CoRE-MOFs PDB format dataset)<br>
+ ---------- CoRE-MOFs-PDB.tar.xz.partab (The split volume-b of CoRE-MOFs PDB format dataset)<br>
+ ---------- CoRE-MOFs-PDB.tar.xz.partac (The split volume-c of CoRE-MOFs PDB format dataset)<br>
 **example-1**: (Spherical palmitoyl vesicle model input/output files and step-by-step guide)<br>
  ---------- README.md (step-by-step guide)<br>
  ---------- palmitoil.pdb<br>
@@ -44,7 +45,9 @@ FILES STRUCTURE
 INSTALLATION
 ============
 # **1. Download and Extract Files**<br>
-Download and extract the required files. Note: The files in the CoRE-MOFs-PDB directory have been expanded with Periodic Boundary Conditions (PBC), resulting in a total size of 3.6 GB. If you do not require this dataset (datasets/CoRE-MOF-PDB.tar.xz.part*), you can either delete or skip extracting it. To extract this file, use the following commands:<br>
+Users can employ auxiliary tools such as DownGit (https://downgit.github.io/#/home), GitZip (https://gitzip.org/) or the GitHub API to download this specific folder. **The sole file needed for PACKMOL-GUI installation is the pakmol1.0 folder. The dataset, case studies, and PACKMOL-Windows-20.15.0 are optional downloads.** In addition, users engaged in the molecular modeling of metal-organic frameworks (MOFs) can opt to download only the datasets-CoRE-MOFs, whereas those focusing on biomolecules can choose to download solely the datasets-BioX. 
+Note: The datasets-CoRE-MOFs file is 135 MB compressed and 3.6 GB when extracted.
+To extract CoRE-MOFs-PDB file, use the following commands:<br>
 cat CoRE-MOFs-PDB.tar.xz.part* > temp.xz<br>
 tar -xvf temp.xz<br>
 Move the **packmol1.0** folder to the **YOUR-vmd-installation-directory/plugins/noarch/tcl** subdirectory.<br>
