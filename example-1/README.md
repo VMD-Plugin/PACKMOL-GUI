@@ -1,7 +1,8 @@
 Step-by-Step Guide
 ===========
 ##  1. Import Molecules<br>
-Import water.pdb and palmitoil.pdb twice, resulting in a total of 4 molecules: water-0, palmitoil-1, palmitoil-2, and water-3.
+Import water.pdb and palmitoil.pdb twice, resulting in a total of 4 molecules: water-0, palmitoil-1, palmitoil-2, and water-3.<br>
+
 ##  2. Add Spherical Constraint to Water-0
 In the geometric constraints panel, click "Add" to apply a spherical constraint to water-0.
 Select sphere from the Type dropdown menu, enter 13 as the radius in the spherical parameters user panel, and press Enter. The default center is set to (0,0,0).
