@@ -35,5 +35,7 @@ For example, "lappend auto_path C:/Program Files/packmol1.0" should be written a
 After starting VMD, you can access the PACKMOL-GUI via the Extensions -> Modeling -> PACKMOL submenu in the VMD Main menu.
 # 4. Configuring the PACKMOL Path and Working Directory
 Upon successful initialization of the PACKMOL-GUI, it is imperative for users to configure the program path for PACKMOL and establish the current working directory. To achieve this, users should select the "browse" button adjacent to the PACKMOL directory label, navigate to the location of the PACKMOL program, select it, and double-click to finalize the path configuration. For specifying the output file path of PACKMOL, users may click the "browse" button next to the "output directory" label and select an appropriate working directory that aligns with their specific requirements. <br><br>
+**Figure 1.** Configuring the PACKMOL Path
 ![config-1](https://github.com/MSM-RAD-X-VMD-Plugin/PACKMOL-GUI/blob/main/annotated-recording-examples/sc-1-Linux.jpg)<br><br>
+**Figure 2.** Configuring the Working Directory
 ![config-2](https://github.com/MSM-RAD-X-VMD-Plugin/PACKMOL-GUI/blob/main/annotated-recording-examples/SC-2-Liunx.jpg)
